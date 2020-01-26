@@ -5,25 +5,102 @@
 #include <glext.h>
 #include <wglext.h>
 
+#define BIND_GL_FUNC(x, t) x = (t)wglGetProcAddress(#x); \
+                           if (x == NULL) { MessageBox(NULL, #x, "error loading gl function", MB_OK); return -1; }
+
 static const char *app_name = "vroom 2 :: the sequel";
 static const int HEIGHT = 600;
 static const int WIDTH = 800;
 
-LRESULT CALLBACK
-WindowProc(HWND window, UINT message, WPARAM wParam, LPARAM lParam);
+unsigned int load_shader(char* vert, char* frag);
+LRESULT CALLBACK WindowProc(HWND window, UINT message, WPARAM wParam, LPARAM lParam);
 
+char *vert = "#version 330\n" \
+"layout (location = 0) in vec3 aPos;\n" \
+"layout (location = 1) in vec3 aColor;\n" \
+"out vec3 fColor;\n" \
+"void main() {\n" \
+"fColor = aColor;\n" \
+"gl_Position = vec4(aPos, 1.0);\n" \
+"}";
+char *frag = "#version 330\n" \
+"in vec3 fColor;\n" \
+"out vec4 FragColor;\n" \
+"void main() {\n" \
+"FragColor = vec4(fColor, 1.0);\n" \
+"}";
+
+typedef struct vec3 {
+  union {
+    float arr[3];
+    float x, y, z;
+  };
+} vec3;
 typedef struct RenderContext {
   HDC device;
   HGLRC glContext;
 } RenderContext;
 
-RenderContext renderer;
 PFNWGLCREATECONTEXTATTRIBSARBPROC wglCreateContextAttribsARB;
 PFNWGLCHOOSEPIXELFORMATARBPROC wglChoosePixelFormatARB;
 
-void load_gl_functions() {
-  wglCreateContextAttribsARB = wglGetProcAddress("wglCreateContextAttribsARB");
-  wglChoosePixelFormatARB = wglGetProcAddress("wglChoosePixelFormatARB");
+PFNGLCREATESHADERPROC glCreateShader;
+PFNGLSHADERSOURCEPROC glShaderSource;
+PFNGLCOMPILESHADERPROC glCompileShader;
+PFNGLATTACHSHADERPROC glAttachShader;
+PFNGLDELETESHADERPROC glDeleteShader;
+PFNGLGETSHADERIVPROC glGetShaderiv;
+PFNGLGETSHADERINFOLOGPROC glGetShaderInfoLog;
+
+PFNGLCREATEPROGRAMPROC glCreateProgram;
+PFNGLLINKPROGRAMPROC glLinkProgram;
+PFNGLUSEPROGRAMPROC glUseProgram;
+PFNGLGETPROGRAMIVPROC glGetProgramiv;
+PFNGLGETPROGRAMINFOLOGPROC glGetProgramInfoLog;
+
+PFNGLGENVERTEXARRAYSPROC glGenVertexArrays;
+PFNGLBINDVERTEXARRAYPROC glBindVertexArray;
+PFNGLDELETEVERTEXARRAYSPROC glDeleteVertexArrays;
+
+PFNGLGENBUFFERSPROC glGenBuffers;
+PFNGLBINDBUFFERPROC glBindBuffer;
+PFNGLBUFFERDATAPROC glBufferData;
+PFNGLDELETEBUFFERSPROC glDeleteBuffers;
+
+PFNGLVERTEXATTRIBPOINTERPROC glVertexAttribPointer;
+PFNGLENABLEVERTEXATTRIBARRAYPROC  glEnableVertexAttribArray;
+
+int load_gl_functions() {
+  BIND_GL_FUNC(wglCreateContextAttribsARB, PFNWGLCREATECONTEXTATTRIBSARBPROC);
+  BIND_GL_FUNC(wglChoosePixelFormatARB, PFNWGLCHOOSEPIXELFORMATARBPROC);
+
+  BIND_GL_FUNC(glCreateShader, PFNGLCREATESHADERPROC);
+  BIND_GL_FUNC(glShaderSource, PFNGLSHADERSOURCEPROC);
+  BIND_GL_FUNC(glCompileShader, PFNGLCOMPILESHADERPROC);
+  BIND_GL_FUNC(glAttachShader, PFNGLATTACHSHADERPROC);
+  BIND_GL_FUNC(glDeleteShader, PFNGLDELETESHADERPROC);
+  BIND_GL_FUNC(glGetShaderiv, PFNGLGETSHADERIVPROC);
+  BIND_GL_FUNC(glGetShaderInfoLog, PFNGLGETSHADERINFOLOGPROC);
+
+  BIND_GL_FUNC(glCreateProgram, PFNGLCREATEPROGRAMPROC);
+  BIND_GL_FUNC(glLinkProgram, PFNGLLINKPROGRAMPROC);
+  BIND_GL_FUNC(glUseProgram, PFNGLUSEPROGRAMPROC);
+  BIND_GL_FUNC(glGetProgramiv, PFNGLGETPROGRAMIVPROC);
+  BIND_GL_FUNC(glGetProgramInfoLog, PFNGLGETPROGRAMINFOLOGPROC);
+
+  BIND_GL_FUNC(glGenVertexArrays, PFNGLGENVERTEXARRAYSPROC);
+  BIND_GL_FUNC(glBindVertexArray, PFNGLBINDVERTEXARRAYPROC);
+  BIND_GL_FUNC(glDeleteVertexArrays, PFNGLDELETEVERTEXARRAYSPROC);
+
+  BIND_GL_FUNC(glGenBuffers, PFNGLGENBUFFERSPROC);
+  BIND_GL_FUNC(glBindBuffer, PFNGLBINDBUFFERPROC);
+  BIND_GL_FUNC(glBufferData, PFNGLBUFFERDATAPROC);
+  BIND_GL_FUNC(glDeleteBuffers, PFNGLDELETEBUFFERSPROC);
+
+  BIND_GL_FUNC(glVertexAttribPointer, PFNGLVERTEXATTRIBPOINTERPROC);
+  BIND_GL_FUNC(glEnableVertexAttribArray, PFNGLENABLEVERTEXATTRIBARRAYPROC);
+
+  return 0;
 }
 
 HWND make_window(RenderContext *context) {
@@ -91,7 +168,12 @@ HWND make_window(RenderContext *context) {
     return NULL;
   }
 
-  load_gl_functions();
+  OutputDebugString(glGetString(GL_VERSION));
+
+  if (load_gl_functions() != 0) {
+    MessageBox(NULL, "failed to init opengl", app_name, MB_OK);
+    return NULL;
+  }
 
   HWND window = CreateWindowEx(
     WS_EX_APPWINDOW,
@@ -130,8 +212,10 @@ HWND make_window(RenderContext *context) {
   }
 
   PIXELFORMATDESCRIPTOR pfd;
-  DescribePixelFormat(context->device, formatId, sizeof(pfd), &pfd);
-  SetPixelFormat(context->device, formatId, &pfd);
+  if (context->device != NULL) {
+    DescribePixelFormat(context->device, formatId, sizeof(pfd), &pfd);
+    SetPixelFormat(context->device, formatId, &pfd);
+  }
 
   int contextAttribs[] = {
     WGL_CONTEXT_MAJOR_VERSION_ARB, 3,
@@ -147,7 +231,7 @@ HWND make_window(RenderContext *context) {
 
   wglMakeCurrent(NULL, NULL);
   wglDeleteContext(fake_glc);
-  ReleaseDC(fake_context, fakeWnd);
+  ReleaseDC(fakeWnd, fake_context);
   DestroyWindow(fakeWnd);
   if (!wglMakeCurrent(context->device, context->glContext)) {
     MessageBox(NULL, "failed to set final context", app_name, MB_OK);
@@ -164,21 +248,9 @@ WindowProc(
   WPARAM wParam,
   LPARAM lParam
 ) {
-  PAINTSTRUCT ps;
-  HDC hdc;
-
   switch (message) {
     case WM_CLOSE: {
       PostQuitMessage(0);
-      break;
-    }
-    case WM_PAINT: {
-      hdc = BeginPaint(window, &ps);
-
-      char *ver = glGetString(GL_VERSION);
-      TextOut(hdc, 5, 5, ver, strlen(ver));
-
-      EndPaint(window, &ps);
       break;
     }
     default: {
@@ -196,7 +268,7 @@ WinMain(
   LPSTR     lpCmdLine,
   int       nCmdShow
 ) {
-  printf("Hello world\n");
+  OutputDebugString("INFO :: Hello world\n");
 
   // create window
   RenderContext ctx = {
@@ -211,6 +283,51 @@ WinMain(
   }
   
   ShowWindow(window, nCmdShow);
+
+  glEnable(GL_DEPTH_TEST);
+
+  unsigned int shader_prog = load_shader(vert, frag);
+
+  float cubeVertexData[] = {
+     0.5f,  0.5f,  0.5f, 1.0f, 0.0f, 0.0f, // 0
+    -0.5f,  0.5f,  0.5f, 0.0f, 1.0f, 0.0f, // 1
+    -0.5f, -0.5f,  0.5f, 0.0f, 0.0f, 1.0f, // 2
+     0.5f, -0.5f,  0.5f, 0.9f, 0.0f, 0.9f, // 3
+     0.5f,  0.5f, -0.5f, 1.0f, 0.0f, 0.0f, // 4
+    -0.5f,  0.5f, -0.5f, 0.0f, 1.0f, 0.0f, // 5
+    -0.5f, -0.5f, -0.5f, 0.0f, 0.0f, 1.0f, // 6
+     0.5f, -0.5f, -0.5f, 0.9f, 0.0f, 0.9f  // 7
+  };
+  vec3 cubePositions[] = {
+    (vec3) { .x = -1.0f, .y = 0.0f, .z = -1.0f },
+    (vec3) { .x =  2.0f, .y = 0.0f, .z =  0.0f }
+  };
+  unsigned int cubeIndices[] = {
+    0, 1, 2, 2, 3, 0, // front
+    4, 0, 3, 3, 7, 4, // right
+    4, 7, 6, 6, 5, 4, // back
+    1, 5, 6, 6, 2, 1, // left
+    4, 5, 1, 1, 0, 4, // top
+    3, 2, 6, 6, 7, 3  // bottom
+  };
+
+  unsigned int VBO, VAO, EBO;
+  glGenVertexArrays(1, &VAO);
+  glGenBuffers(1, &VBO);
+  glGenBuffers(1, &EBO);
+
+  glBindVertexArray(VAO);
+  glBindBuffer(GL_ARRAY_BUFFER, VBO);
+  glBufferData(GL_ARRAY_BUFFER, sizeof(cubeVertexData), cubeVertexData, GL_STATIC_DRAW);
+
+  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+  glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(cubeIndices), cubeIndices, GL_STATIC_DRAW);
+
+  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(GL_FLOAT) * 6, (void*)0);
+  glEnableVertexAttribArray(0);
+  glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(GL_FLOAT) * 6, (void*)(sizeof(GL_FLOAT) * 3));
+  glEnableVertexAttribArray(1);
+
   BOOL running = TRUE;
   MSG msg;
   while (running == TRUE) {
@@ -222,12 +339,72 @@ WinMain(
       TranslateMessage(&msg);
       DispatchMessage(&msg);
     }
+
+    glClearColor(0.2f, 0.2f, 0.2f, 1.0f);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    glUseProgram(shader_prog);
+    glBindVertexArray(VAO);
+    glDrawElements(GL_TRIANGLES, sizeof(cubeIndices), GL_UNSIGNED_INT, 0);
+    
+    SwapBuffers(ctx.device);
   }
 
+  glDeleteBuffers(1, &EBO);
+  glDeleteBuffers(1, &VBO);
+  glDeleteVertexArrays(1, &VAO);
   wglMakeCurrent(NULL, NULL);
   wglDeleteContext(ctx.glContext);
-  ReleaseDC(window, ctx.device);
+  if (ctx.device != NULL) {
+    ReleaseDC(window, ctx.device);
+  }
   DestroyWindow(window);
 
   return (int)msg.wParam;
+}
+
+void shader_compilation_status(unsigned int shader) {
+  int success;
+  char infoLog[512];
+
+  glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
+  if (!success) {
+    glGetShaderInfoLog(shader, 512, NULL, infoLog);
+    MessageBox(NULL, infoLog, "ERROR::SHADER::COMPILATION_FAILED", MB_OK);
+  }
+}
+
+void shader_program_link_status(unsigned int program) {
+  int success;
+  char infoLog[512];
+
+  glGetProgramiv(program, GL_LINK_STATUS, &success);
+  if (!success) {
+    glGetProgramInfoLog(program, 512, NULL, infoLog);
+    MessageBox(NULL, infoLog, "ERROR::SHADER::PROGRAM::LINK_FAILED", MB_OK);
+  }
+}
+
+unsigned int load_shader(char* vert, char* frag) {
+  unsigned int vertex_shader, fragment_shader;
+  vertex_shader = glCreateShader(GL_VERTEX_SHADER);
+  glShaderSource(vertex_shader, 1, &vert, NULL);
+  glCompileShader(vertex_shader);
+  shader_compilation_status(vertex_shader);
+
+  fragment_shader = glCreateShader(GL_FRAGMENT_SHADER);
+  glShaderSource(fragment_shader, 1, &frag, NULL);
+  glCompileShader(fragment_shader);
+  shader_compilation_status(fragment_shader);
+
+  unsigned int shader_program = glCreateProgram();
+  glAttachShader(shader_program, vertex_shader);
+  glAttachShader(shader_program, fragment_shader);
+  glLinkProgram(shader_program);
+  shader_program_link_status(shader_program);
+
+  glDeleteShader(vertex_shader);
+  glDeleteShader(fragment_shader);
+
+  return shader_program;
 }
