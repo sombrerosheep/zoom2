@@ -18,5 +18,19 @@
     <ClCompile Include="main.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="mat.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="vec.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="vec.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="mat.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
