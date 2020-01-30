@@ -128,6 +128,7 @@
     <ClCompile Include="main.c" />
     <ClCompile Include="mat.c" />
     <ClCompile Include="ogl.c" />
+    <ClCompile Include="shader.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="mat.h" />
@@ -135,6 +136,7 @@
       <FileType>CppCode</FileType>
     </ClCompile>
     <ClInclude Include="ogl.h" />
+    <ClInclude Include="shader.h" />
     <ClInclude Include="vec.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

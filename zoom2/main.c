@@ -4,6 +4,7 @@
 #include <time.h>
 
 #include "ogl.h"
+#include "shader.h"
 
 #include "vec.h"
 #include "mat.h"
@@ -219,7 +220,7 @@ WinMain(
 
   glEnable(GL_DEPTH_TEST);
 
-  unsigned int shader_prog = load_shader(vert, frag);
+  shader shader_prog = shader_create(vert, frag);
 
   float cubeVertexData[] = {
      0.5f,  0.5f,  0.5f, 1.0f, 0.0f, 0.0f, // 0
@@ -285,15 +286,15 @@ WinMain(
     model = mat4_rotate_vec3(model, yrot, (vec3) { 0.0f, 1.0f, 0.0f });
     model = mat4_rotate_vec3(model, xrot, (vec3) { 1.0f, 0.0f, 0.0f });
 
-    glUseProgram(shader_prog);
-    unsigned int mloc = glGetUniformLocation(shader_prog, "model");
-    glUniformMatrix4fv(mloc, 1, GL_FALSE, &model.values);
+    shader_use(shader_prog);
+    shader_set_mat4(shader_prog, "model", model);
     glBindVertexArray(VAO);
     glDrawElements(GL_TRIANGLES, sizeof(cubeIndices), GL_UNSIGNED_INT, 0);
     
     SwapBuffers(ctx.device);
   }
 
+  shader_destroy(shader_prog);
   glDeleteBuffers(1, &EBO);
   glDeleteBuffers(1, &VBO);
   glDeleteVertexArrays(1, &VAO);
@@ -305,50 +306,4 @@ WinMain(
   DestroyWindow(window);
 
   return (int)msg.wParam;
-}
-
-void shader_compilation_status(unsigned int shader) {
-  int success;
-  char infoLog[512];
-
-  glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
-  if (!success) {
-    glGetShaderInfoLog(shader, 512, NULL, infoLog);
-    MessageBox(NULL, infoLog, "ERROR::SHADER::COMPILATION_FAILED", MB_OK);
-  }
-}
-
-void shader_program_link_status(unsigned int program) {
-  int success;
-  char infoLog[512];
-
-  glGetProgramiv(program, GL_LINK_STATUS, &success);
-  if (!success) {
-    glGetProgramInfoLog(program, 512, NULL, infoLog);
-    MessageBox(NULL, infoLog, "ERROR::SHADER::PROGRAM::LINK_FAILED", MB_OK);
-  }
-}
-
-unsigned int load_shader(char* vert, char* frag) {
-  unsigned int vertex_shader, fragment_shader;
-  vertex_shader = glCreateShader(GL_VERTEX_SHADER);
-  glShaderSource(vertex_shader, 1, &vert, NULL);
-  glCompileShader(vertex_shader);
-  shader_compilation_status(vertex_shader);
-
-  fragment_shader = glCreateShader(GL_FRAGMENT_SHADER);
-  glShaderSource(fragment_shader, 1, &frag, NULL);
-  glCompileShader(fragment_shader);
-  shader_compilation_status(fragment_shader);
-
-  unsigned int shader_program = glCreateProgram();
-  glAttachShader(shader_program, vertex_shader);
-  glAttachShader(shader_program, fragment_shader);
-  glLinkProgram(shader_program);
-  shader_program_link_status(shader_program);
-
-  glDeleteShader(vertex_shader);
-  glDeleteShader(fragment_shader);
-
-  return shader_program;
 }
