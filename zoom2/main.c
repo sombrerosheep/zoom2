@@ -278,9 +278,12 @@ WinMain(
     glClearColor(0.2f, 0.2f, 0.2f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    float frot = sinf((float)clock() / CLOCKS_PER_SEC);
+    float yrot = sinf((float)clock() / CLOCKS_PER_SEC);
+    float xrot = cosf((float)clock() / CLOCKS_PER_SEC);
+
     mat4 model = mat4_identity();
-    model = mat4_rotate_vec3(model, frot, (vec3) { 0.0f, 1.0f, 0.0f });
+    model = mat4_rotate_vec3(model, yrot, (vec3) { 0.0f, 1.0f, 0.0f });
+    model = mat4_rotate_vec3(model, xrot, (vec3) { 1.0f, 0.0f, 0.0f });
 
     glUseProgram(shader_prog);
     unsigned int mloc = glGetUniformLocation(shader_prog, "model");
