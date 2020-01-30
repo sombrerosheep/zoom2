@@ -3,15 +3,10 @@
 #include <math.h>
 #include <time.h>
 
-#include <gl/GL.h>
-#include <glext.h>
-#include <wglext.h>
+#include "ogl.h"
 
 #include "vec.h"
 #include "mat.h"
-
-#define BIND_GL_FUNC(x, t) x = (t)wglGetProcAddress(#x); \
-                           if (x == NULL) { MessageBox(NULL, #x, "error loading gl function", MB_OK); return -1; }
 
 static const char *app_name = "vroom 2 :: the sequel";
 static const int HEIGHT = 600;
@@ -40,74 +35,6 @@ typedef struct RenderContext {
   HDC device;
   HGLRC glContext;
 } RenderContext;
-
-PFNWGLCREATECONTEXTATTRIBSARBPROC wglCreateContextAttribsARB;
-PFNWGLCHOOSEPIXELFORMATARBPROC wglChoosePixelFormatARB;
-
-PFNGLCREATESHADERPROC glCreateShader;
-PFNGLSHADERSOURCEPROC glShaderSource;
-PFNGLCOMPILESHADERPROC glCompileShader;
-PFNGLATTACHSHADERPROC glAttachShader;
-PFNGLDELETESHADERPROC glDeleteShader;
-PFNGLGETSHADERIVPROC glGetShaderiv;
-PFNGLGETSHADERINFOLOGPROC glGetShaderInfoLog;
-
-PFNGLCREATEPROGRAMPROC glCreateProgram;
-PFNGLLINKPROGRAMPROC glLinkProgram;
-PFNGLUSEPROGRAMPROC glUseProgram;
-PFNGLGETPROGRAMIVPROC glGetProgramiv;
-PFNGLGETPROGRAMINFOLOGPROC glGetProgramInfoLog;
-
-PFNGLGENVERTEXARRAYSPROC glGenVertexArrays;
-PFNGLBINDVERTEXARRAYPROC glBindVertexArray;
-PFNGLDELETEVERTEXARRAYSPROC glDeleteVertexArrays;
-
-PFNGLGENBUFFERSPROC glGenBuffers;
-PFNGLBINDBUFFERPROC glBindBuffer;
-PFNGLBUFFERDATAPROC glBufferData;
-PFNGLDELETEBUFFERSPROC glDeleteBuffers;
-
-PFNGLVERTEXATTRIBPOINTERPROC glVertexAttribPointer;
-PFNGLENABLEVERTEXATTRIBARRAYPROC  glEnableVertexAttribArray;
-
-PFNGLGETUNIFORMLOCATIONPROC glGetUniformLocation;
-PFNGLUNIFORMMATRIX4FVPROC glUniformMatrix4fv;
-
-int load_gl_functions() {
-  BIND_GL_FUNC(wglCreateContextAttribsARB, PFNWGLCREATECONTEXTATTRIBSARBPROC);
-  BIND_GL_FUNC(wglChoosePixelFormatARB, PFNWGLCHOOSEPIXELFORMATARBPROC);
-
-  BIND_GL_FUNC(glCreateShader, PFNGLCREATESHADERPROC);
-  BIND_GL_FUNC(glShaderSource, PFNGLSHADERSOURCEPROC);
-  BIND_GL_FUNC(glCompileShader, PFNGLCOMPILESHADERPROC);
-  BIND_GL_FUNC(glAttachShader, PFNGLATTACHSHADERPROC);
-  BIND_GL_FUNC(glDeleteShader, PFNGLDELETESHADERPROC);
-  BIND_GL_FUNC(glGetShaderiv, PFNGLGETSHADERIVPROC);
-  BIND_GL_FUNC(glGetShaderInfoLog, PFNGLGETSHADERINFOLOGPROC);
-
-  BIND_GL_FUNC(glCreateProgram, PFNGLCREATEPROGRAMPROC);
-  BIND_GL_FUNC(glLinkProgram, PFNGLLINKPROGRAMPROC);
-  BIND_GL_FUNC(glUseProgram, PFNGLUSEPROGRAMPROC);
-  BIND_GL_FUNC(glGetProgramiv, PFNGLGETPROGRAMIVPROC);
-  BIND_GL_FUNC(glGetProgramInfoLog, PFNGLGETPROGRAMINFOLOGPROC);
-
-  BIND_GL_FUNC(glGenVertexArrays, PFNGLGENVERTEXARRAYSPROC);
-  BIND_GL_FUNC(glBindVertexArray, PFNGLBINDVERTEXARRAYPROC);
-  BIND_GL_FUNC(glDeleteVertexArrays, PFNGLDELETEVERTEXARRAYSPROC);
-
-  BIND_GL_FUNC(glGenBuffers, PFNGLGENBUFFERSPROC);
-  BIND_GL_FUNC(glBindBuffer, PFNGLBINDBUFFERPROC);
-  BIND_GL_FUNC(glBufferData, PFNGLBUFFERDATAPROC);
-  BIND_GL_FUNC(glDeleteBuffers, PFNGLDELETEBUFFERSPROC);
-
-  BIND_GL_FUNC(glVertexAttribPointer, PFNGLVERTEXATTRIBPOINTERPROC);
-  BIND_GL_FUNC(glEnableVertexAttribArray, PFNGLENABLEVERTEXATTRIBARRAYPROC);
-
-  BIND_GL_FUNC(glUniformMatrix4fv, PFNGLUNIFORMMATRIX4FVPROC);
-  BIND_GL_FUNC(glGetUniformLocation, PFNGLGETUNIFORMLOCATIONPROC);
-
-  return 0;
-}
 
 HWND make_window(RenderContext *context) {
   PIXELFORMATDESCRIPTOR fakePfd = {
@@ -176,7 +103,7 @@ HWND make_window(RenderContext *context) {
 
   OutputDebugString(glGetString(GL_VERSION));
 
-  if (load_gl_functions() != 0) {
+  if (init_gl_func() != 0) {
     MessageBox(NULL, "failed to init opengl", app_name, MB_OK);
     return NULL;
   }
