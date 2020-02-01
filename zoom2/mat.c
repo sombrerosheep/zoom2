@@ -9,15 +9,12 @@ extern const mat4 mat4_zero = {
   0.0f, 0.0f, 0.0f, 0.0f
 };
 
-mat4 mat4_identity() {
-  mat4 identity = mat4_zero;
-  identity.values[0][0] = 1.0f;
-  identity.values[1][1] = 1.0f;
-  identity.values[2][2] = 1.0f;
-  identity.values[3][3] = 1.0f;
-
-  return identity;
-}
+extern const mat4 mat4_identity = {
+  1.0f, 0.0f, 0.0f, 0.0f,
+  0.0f, 1.0f, 0.0f, 0.0f,
+  0.0f, 0.0f, 1.0f, 0.0f,
+  0.0f, 0.0f, 0.0f, 1.0f
+};
 
 mat4 mat4_translate_vec3(mat4 mat, vec3 vec) {
   mat4 result = mat;
@@ -88,6 +85,42 @@ mat4 mat4_rotate_vec3(mat4 mat, float angle, vec3 vec) {
     z.x, z.y, z.z, 0.0f,
     mat.values[3][0], mat.values[3][1], mat.values[3][2], mat.values[3][3]
   };
+
+  return result;
+}
+
+mat4 mat4_lookat(vec3 eye, vec3 center, vec3 up) {
+  vec3 f = vec3_normalize(vec3_sub(center, eye));
+  vec3 s = vec3_normalize(vec3_cross(f, up));
+  vec3 u = vec3_cross(s, f);
+  
+  mat4 result = mat4_identity;
+
+  result.values[0][0] = s.x;
+  result.values[1][0] = s.y;
+  result.values[2][0] = s.z;
+  result.values[0][1] = u.x;
+  result.values[1][1] = u.y;
+  result.values[2][1] = u.z;
+  result.values[0][2] = -f.x;
+  result.values[1][2] = -f.y;
+  result.values[2][2] = -f.z;
+  result.values[3][0] = -vec3_dot(s, eye);
+  result.values[3][1] = -vec3_dot(u, eye);
+  result.values[3][2] = vec3_dot(f, eye);
+
+  return result;
+}
+
+mat4 mat4_perspective(float fov, float aspect, float near, float far) {
+  float tan_half_fov = tanf(fov / 2.0f);
+  mat4 result = mat4_zero;
+
+  result.values[0][0] = 1.0f / (aspect * tan_half_fov);
+  result.values[1][1] = 1.0f / tan_half_fov;
+  result.values[2][2] = -(far + near) / (far - near);
+  result.values[2][3] = -1.0f;
+  result.values[3][2] = -(2.0f * far * near) / (far - near);
 
   return result;
 }
