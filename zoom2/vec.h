@@ -22,10 +22,34 @@ float vec3_magnitude(vec3 vec);
 vec3 vec3_normalize(vec3 vec);
 
 /*
+  vec3_sub
+  subtracts 2 vec3's returning the difference
+*/
+vec3 vec3_sub(vec3 a, vec3 b);
+
+/*
+  vec3_mul
+  multiplies to vec3
+*/
+vec3 vec3_mul(vec3 a, vec3 b);
+
+/*
   vec3_mulf
   multiplies a vec3 by a scalar float
 */
 vec3 vec3_mulf(vec3 vec, float f);
+
+/*
+  vec3_cross
+  returns the vector cross product
+*/
+vec3 vec3_cross(vec3 a, vec3 b);
+
+/*
+  vec3_dot
+  returns dot product of two vec3
+*/
+float vec3_dot(vec3 a, vec3 b);
 
 /*
   vec4

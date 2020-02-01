@@ -22,6 +22,26 @@ vec3 vec3_normalize(vec3 vec) {
   return result;
 }
 
+vec3 vec3_sub(vec3 a, vec3 b) {
+  vec3 result;
+
+  result.x = a.x - b.x;
+  result.y = a.y - b.y;
+  result.z = a.z - b.z;
+
+  return result;
+}
+
+vec3 vec3_mul(vec3 a, vec3 b) {
+  vec3 vec;
+
+  vec.x = a.x * b.x;
+  vec.y = a.y * b.y;
+  vec.z = a.z * b.z;
+
+  return vec;
+}
+
 vec3 vec3_mulf(vec3 vec, float f) {
   vec3 result = vec;
 
@@ -32,8 +52,24 @@ vec3 vec3_mulf(vec3 vec, float f) {
   return result;
 }
 
+vec3 vec3_cross(vec3 a, vec3 b) {
+  vec3 result;
+
+  result.x = a.y * b.z - a.z * b.y;
+  result.y = a.z * b.x - a.x * b.z;
+  result.z = a.x * b.y - a.y * b.x;
+
+  return result;
+}
+
+float vec3_dot(vec3 a, vec3 b) {
+  vec3 product = vec3_mul(a, b);
+  float psum = product.x + product.y + product.z;
+
+  return psum;
+}
+
 float vec4_magnitude(vec4 vec) {
-  // sqrt of sum of squares
   float squares = vec.x * vec.x +
     vec.y * vec.y +
     vec.z * vec.z +
