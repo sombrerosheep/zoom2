@@ -246,8 +246,8 @@ WinMain(
      0.5f, -0.5f, -0.5f, 0.9f, 0.0f, 0.9f  // 7
   };
   vec3 cubePositions[] = {
-    (vec3) { .x = -1.0f, .y = 0.0f, .z = -1.0f },
-    (vec3) { .x =  2.0f, .y = 0.0f, .z =  0.0f }
+    (vec3) { .x = -2.0f, .y =  1.0f, .z = -1.0f },
+    (vec3) { .x =  2.0f, .y = -1.5f, .z =  0.0f }
   };
   unsigned int cubeIndices[] = {
     0, 1, 2, 2, 3, 0, // front
@@ -258,11 +258,12 @@ WinMain(
     3, 2, 6, 6, 7, 3  // bottom
   };
 
-  vec3 camera_pos = { 2.0f, 2.0f, 3.0f };
+  vec3 camera_pos = { 2.0f, 2.0f, 7.0f };
   vec3 camera_target = { 0.0f, 0.0f, 0.0f };
   float camera_pitch = -90.f;
   float camera_yaw = -30.f;
   vec3 up = { 0.0f, 1.0f, 0.0f };
+
   mat4 view = mat4_lookat(camera_pos, camera_target, up);
   mat4 projection = mat4_perspective(0.785398f, WIDTH / HEIGHT, 0.1f, 100.0f);
   
@@ -303,16 +304,31 @@ WinMain(
     float yrot = sinf((float)clock() / CLOCKS_PER_SEC);
     float xrot = cosf((float)clock() / CLOCKS_PER_SEC);
 
-    mat4 model = mat4_identity;
-    model = mat4_rotate_vec3(model, yrot, (vec3) { 0.0f, 1.0f, 0.0f });
-    model = mat4_rotate_vec3(model, xrot, (vec3) { 1.0f, 0.0f, 0.0f });
-    model = mat4_translate_vec3(model, cubePositions[0]);
-
+    glBindVertexArray(VAO);
     shader_use(shader_prog);
     shader_set_mat4(shader_prog, "view", view);
-    shader_set_mat4(shader_prog, "model", model);
     shader_set_mat4(shader_prog, "projection", projection);
-    glBindVertexArray(VAO);
+
+    mat4 model = mat4_identity;
+    model = mat4_translate_vec3(model, cubePositions[0]);
+
+    mprintf("%f | %f | %f | %f\n%f | %f | %f | %f\n%f | %f | %f | %f\n%f | %f | %f | %f\n\n\n",
+      model.values[0][0], model.values[1][0], model.values[2][0], model.values[3][0],
+      model.values[0][1], model.values[1][1], model.values[2][1], model.values[3][1],
+      model.values[0][2], model.values[1][2], model.values[2][2], model.values[3][2],
+      model.values[0][3], model.values[1][3], model.values[2][3], model.values[3][3]
+    );
+
+    model = mat4_rotate_vec3(model, yrot, (vec3) { 0.0f, 1.0f, 0.0f });
+    model = mat4_rotate_vec3(model, xrot, (vec3) { 1.0f, 0.0f, 0.0f });
+    shader_set_mat4(shader_prog, "model", model);
+    glDrawElements(GL_TRIANGLES, sizeof(cubeIndices), GL_UNSIGNED_INT, 0);
+
+    model = mat4_identity;
+    model = mat4_translate_vec3(model, cubePositions[1]);
+    model = mat4_rotate_vec3(model, yrot, (vec3) { 0.0f, 1.0f, 0.0f });
+    model = mat4_rotate_vec3(model, -xrot, (vec3) { 1.0f, 0.0f, 0.0f });
+    shader_set_mat4(shader_prog, "model", model);
     glDrawElements(GL_TRIANGLES, sizeof(cubeIndices), GL_UNSIGNED_INT, 0);
     
     SwapBuffers(ctx.device);

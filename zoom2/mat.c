@@ -19,10 +19,9 @@ extern const mat4 mat4_identity = {
 mat4 mat4_translate_vec3(mat4 mat, vec3 vec) {
   mat4 result = mat;
 
-  result.values[0][3] *= vec.x;
-  result.values[1][3] *= vec.y;
-  result.values[2][3] *= vec.z;
-  result.values[3][3] *= 1.0f;
+  result.values[3][0] += vec.x;
+  result.values[3][1] += vec.y;
+  result.values[3][2] += vec.z;
 
   return result;
 }
