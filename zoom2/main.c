@@ -13,17 +13,31 @@ static const char *app_name = "vroom 2 :: the sequel";
 static const int HEIGHT = 600;
 static const int WIDTH = 800;
 
-unsigned int load_shader(char* vert, char* frag);
 LRESULT CALLBACK WindowProc(HWND window, UINT message, WPARAM wParam, LPARAM lParam);
+
+void _mprintf(const char* format, va_list args) {
+  char buf[512];
+  vsprintf_s(buf, 512, format, args);
+  OutputDebugString(buf);
+}
+
+void mprintf(const char* format, ...) {
+  va_list argList;
+  va_start(argList, format);
+  _mprintf(format, argList);
+  va_end(argList);
+}
 
 char *vert = "#version 330\n" \
 "layout (location = 0) in vec3 aPos;\n" \
 "layout (location = 1) in vec3 aColor;\n" \
 "out vec3 fColor;\n" \
-"uniform mat4 model;" \
+"uniform mat4 model;\n" \
+"uniform mat4 view;\n" \
+"uniform mat4 projection;\n" \
 "void main() {\n" \
 "fColor = aColor;\n" \
-"gl_Position = model * vec4(aPos, 1.0);\n" \
+"gl_Position = projection * view * model * vec4(aPos, 1.0);\n" \
 "}";
 char *frag = "#version 330\n" \
 "in vec3 fColor;\n" \
@@ -202,8 +216,7 @@ WinMain(
   LPSTR     lpCmdLine,
   int       nCmdShow
 ) {
-  OutputDebugString("INFO :: Hello world\n");
- 
+  mprintf("INFO :: Hello world\n");
   // create window
   RenderContext ctx = {
     .device = NULL,
@@ -245,6 +258,14 @@ WinMain(
     3, 2, 6, 6, 7, 3  // bottom
   };
 
+  vec3 camera_pos = { 2.0f, 2.0f, 3.0f };
+  vec3 camera_target = { 0.0f, 0.0f, 0.0f };
+  float camera_pitch = -90.f;
+  float camera_yaw = -30.f;
+  vec3 up = { 0.0f, 1.0f, 0.0f };
+  mat4 view = mat4_lookat(camera_pos, camera_target, up);
+  mat4 projection = mat4_perspective(0.785398f, WIDTH / HEIGHT, 0.1f, 100.0f);
+  
   unsigned int VBO, VAO, EBO;
   glGenVertexArrays(1, &VAO);
   glGenBuffers(1, &VBO);
@@ -262,7 +283,7 @@ WinMain(
   glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(GL_FLOAT) * 6, (void*)(sizeof(GL_FLOAT) * 3));
   glEnableVertexAttribArray(1);
 
-  glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+  //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
   BOOL running = TRUE;
   MSG msg;
@@ -282,12 +303,15 @@ WinMain(
     float yrot = sinf((float)clock() / CLOCKS_PER_SEC);
     float xrot = cosf((float)clock() / CLOCKS_PER_SEC);
 
-    mat4 model = mat4_identity();
+    mat4 model = mat4_identity;
     model = mat4_rotate_vec3(model, yrot, (vec3) { 0.0f, 1.0f, 0.0f });
     model = mat4_rotate_vec3(model, xrot, (vec3) { 1.0f, 0.0f, 0.0f });
+    model = mat4_translate_vec3(model, cubePositions[0]);
 
     shader_use(shader_prog);
+    shader_set_mat4(shader_prog, "view", view);
     shader_set_mat4(shader_prog, "model", model);
+    shader_set_mat4(shader_prog, "projection", projection);
     glBindVertexArray(VAO);
     glDrawElements(GL_TRIANGLES, sizeof(cubeIndices), GL_UNSIGNED_INT, 0);
     
