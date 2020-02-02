@@ -30,6 +30,9 @@
     <ClCompile Include="shader.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="mesh.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="vec.h">
@@ -42,6 +45,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="shader.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="mesh.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
