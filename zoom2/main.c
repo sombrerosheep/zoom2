@@ -202,6 +202,12 @@ WindowProc(
       PostQuitMessage(0);
       break;
     }
+    case WM_KEYDOWN: {
+      if (wParam == VK_ESCAPE) {
+        PostQuitMessage(0);
+      }
+      break;
+    }
     default: {
       return DefWindowProc(window, message, wParam, lParam);
     }
