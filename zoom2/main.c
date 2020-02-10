@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <math.h>
 #include <time.h>
+#include <assert.h>
 
 #include "ogl.h"
 #include "shader.h"
@@ -29,23 +30,33 @@ void mprintf(const char* format, ...) {
   va_end(argList);
 }
 
-char *vert = "#version 330\n" \
-"layout (location = 0) in vec3 aPos;\n" \
-"layout (location = 1) in vec3 aColor;\n" \
-"out vec3 fColor;\n" \
-"uniform mat4 model;\n" \
-"uniform mat4 view;\n" \
-"uniform mat4 projection;\n" \
-"void main() {\n" \
-"fColor = aColor;\n" \
-"gl_Position = projection * view * model * vec4(aPos, 1.0);\n" \
-"}";
-char *frag = "#version 330\n" \
-"in vec3 fColor;\n" \
-"out vec4 FragColor;\n" \
-"void main() {\n" \
-"FragColor = vec4(fColor, 1.0);\n" \
-"}";
+char* getFileContents(const char* fileName) {
+    HANDLE hFile = CreateFile(fileName, GENERIC_READ, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+    if (hFile == INVALID_HANDLE_VALUE) {
+        mprintf("Error reading file (%s): %d\n", fileName, GetLastError());
+        return NULL;
+    }
+
+    DWORD size = GetFileSize(hFile, NULL);
+    if (size < 1) {
+        mprintf("File size is zero (%s)\n", fileName);
+        return NULL;
+    }
+
+    char *buffer = malloc(sizeof(char) * size + 1);
+    if (buffer == NULL) {
+        mprintf("Unable to allocate memory for file %s\n", fileName);
+        return NULL;
+    }
+    DWORD bytesRead;
+    BOOL read = ReadFile(hFile, buffer, size, &bytesRead, NULL);
+    if (read) {
+        buffer[bytesRead] = '\0';
+        return buffer;
+    }
+
+    return NULL;
+}
 
 typedef struct RenderContext {
   HDC device;
@@ -240,7 +251,11 @@ WinMain(
 
   glEnable(GL_DEPTH_TEST);
 
+  char* vert = getFileContents("resources\\shaders\\basic.vert");
+  char* frag = getFileContents("resources\\shaders\\basic.frag");
   shader shader_prog = shader_create(vert, frag);
+  free(vert);
+  free(frag);
 
   vec3 cubePositions[] = {
     (vec3) { .x = -2.0f,.y = 1.0f,.z = -1.0f },
