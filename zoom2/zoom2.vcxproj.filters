@@ -33,6 +33,9 @@
     <ClCompile Include="mesh.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="darray.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="vec.h">
@@ -48,6 +51,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="mesh.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="darray.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

@@ -88,6 +88,7 @@
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>%gamedev%\frameworks\glext</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -125,6 +126,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="darray.c" />
     <ClCompile Include="main.c" />
     <ClCompile Include="mat.c" />
     <ClCompile Include="mesh.c" />
@@ -132,6 +134,7 @@
     <ClCompile Include="shader.c" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="darray.h" />
     <ClInclude Include="mat.h" />
     <ClCompile Include="vec.c">
       <FileType>CppCode</FileType>
