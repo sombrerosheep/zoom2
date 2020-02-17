@@ -10,6 +10,7 @@
 
 #include "vec.h"
 #include "mat.h"
+#include "darray.h"
 
 static const char *app_name = "vroom 2 :: the sequel";
 static const int HEIGHT = 600;
@@ -56,6 +57,135 @@ char* getFileContents(const char* fileName) {
     }
 
     return NULL;
+}
+
+vec3 parse_vec3(const char* string) {
+  vec3 vec = { 0.f, 0.f, 0.f };
+
+  char *x_start = strchr(string, ' ') + 1;
+  char *y_start = strchr(x_start, ' ') + 1;
+  char *z_start = strchr(y_start, ' ') + 1;
+  char *end = strchr(z_start, '\0');
+
+  size_t sz_x = y_start - x_start;
+  size_t sz_y = z_start - y_start;
+  size_t sz_z = end - z_start;
+  char *xs, *ys, *zs;
+  if ((xs = malloc(sz_x)) == NULL) {
+    return vec;
+  }
+  if ((ys = malloc(sz_y)) == NULL) {
+    return vec;
+  }
+  if ((zs = malloc(sz_z)) == NULL) {
+    return vec;
+  }
+
+  memcpy(xs, x_start, sz_x);
+  memcpy(ys, y_start, sz_y);
+  memcpy(zs, z_start, sz_z);
+  xs[sz_x - 1] = '\0';
+  ys[sz_y - 1] = '\0';
+  zs[sz_z - 1] = '\0';
+
+  vec.x = (float)atof(xs);
+  vec.y = (float)atof(ys);
+  vec.z = (float)atof(zs);
+
+  free(xs);
+  free(ys);
+  free(zs);
+
+  return vec;
+}
+
+vec2 parse_vec2(const char* string) {
+  vec2 vec = { 0.f, 0.f };
+
+  char *x_start = strchr(string, ' ') + 1;
+  char *y_start = strchr(x_start, ' ') + 1;
+  char *end = strchr(y_start, '\0');
+
+  size_t sz_x = y_start - x_start;
+  size_t sz_y = end - y_start;
+  char *xs, *ys;
+  if ((xs = malloc(sz_x)) == NULL) {
+    return vec;
+  }
+  if ((ys = malloc(sz_y)) == NULL) {
+    return vec;
+  }
+
+  memcpy(xs, x_start, sz_x);
+  memcpy(ys, y_start, sz_y);
+  xs[sz_x - 1] = '\0';
+  ys[sz_y - 1] = '\0';
+
+  vec.x = (float)atof(xs);
+  vec.y = (float)atof(ys);
+
+  free(xs);
+  free(ys);
+
+  return vec;
+}
+
+void loadObj(const char* fileName) {
+  FILE* f;
+  errno_t err = fopen_s(&f, fileName, "r");
+  if (err != 0) {
+    mprintf("Error reading file! %d\n", err);
+    return;
+  }
+  if (f == NULL) {
+    mprintf("file handler is null\n");
+    return;
+  }
+
+  darray* vertices = darray_create(50, sizeof(vec3));
+  darray* texcoords = darray_create(50, sizeof(vec2));
+  darray* normals = darray_create(50, sizeof(vec3));
+
+  #define LINE_BUFFER_SIZE 256
+  char buffer[LINE_BUFFER_SIZE];
+
+  while (fgets(buffer, LINE_BUFFER_SIZE, f)) {
+    assert(strlen(buffer) < LINE_BUFFER_SIZE);
+    if (buffer[0] == 'o') {
+      mprintf("processing new model: %s\n", buffer);
+    } else if (buffer[0] == 'v' && buffer[1] == ' ') {
+      mprintf("\tprocessing vertex: %s\n", buffer);
+      vec3 vec = parse_vec3(buffer);
+      darray_insert(vertices, &vec);
+    } else if (buffer[0] == 'v' && buffer[1] == 't') {
+      mprintf("\tprocessing texcoord: %s\n", buffer);
+      vec2 vec = parse_vec2(buffer);
+      darray_insert(texcoords, &vec);
+    } else if (buffer[0] == 'v' && buffer[1] == 'n') {
+      mprintf("\tprocessing normal: %s\n", buffer);
+      vec3 vec = parse_vec3(buffer);
+      darray_insert(normals, &vec);
+    } else if (buffer[0] == 'f') {
+      mprintf("\tprocessing face: %s\n", buffer);
+      // parse it
+    } else {
+      mprintf("\tunhandled token: %s\n", buffer);
+    }
+  }
+    /*
+      o      - object name    char*
+      v      - vertex         vec3[] (space delimited)
+      vt     - texcoord       vec2[] (space delimited)
+      vn     - vert norm      vec3[] (space delimited)
+      f      - face           int[3] (/ delimited) vertex/texCoord/normal
+      s      - smooth group   bool (as on/off)
+      usemtl - material name
+      mtllib - material lib
+    */
+
+  fclose(f);
+  mprintf("Done reading file\n");
+  return;
 }
 
 typedef struct RenderContext {
@@ -256,6 +386,8 @@ WinMain(
   shader shader_prog = shader_create(vert, frag);
   free(vert);
   free(frag);
+
+  loadObj("C:\\Users\\Noah\\Documents\\models\\cube\\cube.obj");
 
   vec3 cubePositions[] = {
     (vec3) { .x = -2.0f,.y = 1.0f,.z = -1.0f },
