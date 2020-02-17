@@ -2,6 +2,14 @@
 #define VEC_H
 
 /*
+  vec2
+  2 dimensional vector of floats
+*/
+typedef struct vec2 {
+  float x, y;
+} vec2;
+
+/*
   vec3
   3 dimensional vector of floats
 */
