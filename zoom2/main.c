@@ -421,7 +421,7 @@ WinMain(
   vec3 up = { 0.0f, 1.0f, 0.0f };
 
   mat4 view = mat4_lookat(camera_pos, camera_target, up);
-  mat4 projection = mat4_perspective(0.785398f, WIDTH / HEIGHT, 0.1f, 100.0f);
+  mat4 projection = mat4_perspective(0.785398f, (float)WIDTH / (float)HEIGHT, 0.1f, 100.0f);
   
   //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
