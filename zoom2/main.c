@@ -31,8 +31,8 @@ void mprintf(const char* format, ...) {
   va_end(argList);
 }
 
-char* getFileContents(const char* fileName) {
-    HANDLE hFile = CreateFile(fileName, GENERIC_READ, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+char* get_file_contents(const char* fileName) {
+HANDLE hFile = CreateFile(fileName, GENERIC_READ, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
     if (hFile == INVALID_HANDLE_VALUE) {
         mprintf("Error reading file (%s): %d\n", fileName, GetLastError());
         return NULL;
@@ -59,7 +59,7 @@ char* getFileContents(const char* fileName) {
     return NULL;
 }
 
-void loadObj(const char* fileName) {
+darray *load_obj(const char* fileName) {
   FILE* f;
   errno_t err = fopen_s(&f, fileName, "r");
   if (err != 0) {
@@ -154,8 +154,11 @@ void loadObj(const char* fileName) {
     */
 
   fclose(f);
+  darray_destroy(vertices);
+  darray_destroy(texcoords);
+  darray_destroy(normals);
   mprintf("Done reading file\n");
-  return;
+  return vertex_data;
 }
 
 typedef struct RenderContext {
@@ -351,19 +354,19 @@ WinMain(
 
   glEnable(GL_DEPTH_TEST);
 
-  char* vert = getFileContents("resources\\shaders\\basic.vert");
-  char* frag = getFileContents("resources\\shaders\\basic.frag");
+  char* vert = get_file_contents("resources\\shaders\\basic.vert");
+  char* frag = get_file_contents("resources\\shaders\\basic.frag");
   shader shader_prog = shader_create(vert, frag);
   free(vert);
   free(frag);
 
-  loadObj("c:\\Users\\Noah\\Documents\\GameDev\\Projects\\zoom2\\zoom2\\resources\\models\\cube\\cube.obj");
+  darray* cube_data = load_obj("c:\\Users\\Noah\\Documents\\GameDev\\Projects\\zoom2\\zoom2\\resources\\models\\cube\\cube.obj");
 
-  vec3 cubePositions[] = {
+  vec3 cube_positions[] = {
     (vec3) { .x = -2.0f,.y = 1.0f,.z = -1.0f },
     (vec3) { .x = 2.0f,.y = -1.5f,.z = 0.0f }
   };
-  vertex_pc cubeVertices[] = {
+  vertex_pc cube_vertices[] = {
     (vertex_pc){ (vec3){ 0.5f,  0.5f,  0.5f }, (vec3){ 1.0f, 0.0f, 0.0f } }, // 0
     (vertex_pc){ (vec3){-0.5f,  0.5f,  0.5f }, (vec3){ 0.0f, 1.0f, 0.0f } }, // 1
     (vertex_pc){ (vec3){-0.5f, -0.5f,  0.5f }, (vec3){ 0.0f, 0.0f, 1.0f } }, // 2
@@ -373,7 +376,7 @@ WinMain(
     (vertex_pc){ (vec3){-0.5f, -0.5f, -0.5f }, (vec3){ 0.0f, 0.0f, 1.0f } }, // 6
     (vertex_pc){ (vec3){ 0.5f, -0.5f, -0.5f }, (vec3){ 0.9f, 0.0f, 0.9f } }  // 7
   };
-  unsigned int cubeIndices[] = {
+  unsigned int cube_indices[] = {
     0, 1, 2, 2, 3, 0, // front
     4, 0, 3, 3, 7, 4, // right
     4, 7, 6, 6, 5, 4, // back
@@ -382,7 +385,7 @@ WinMain(
     3, 2, 6, 6, 7, 3  // bottom
   };
   mesh_vpc cube;
-  mesh_vpc_init(&cube, cubeVertices, 8, cubeIndices, 36);
+  mesh_vpc_init(&cube, cube_vertices, 8, cube_indices, 36);
 
   vec3 camera_pos = { 2.0f, 2.0f, 7.0f };
   vec3 camera_target = { 0.0f, 0.0f, 0.0f };
@@ -423,14 +426,14 @@ WinMain(
     shader_set_mat4(shader_prog, "projection", projection);
 
     mat4 model = mat4_identity;
-    model = mat4_translate_vec3(model, cubePositions[0]);
+    model = mat4_translate_vec3(model, cube_positions[0]);
     model = mat4_rotate_vec3(model, yrot, (vec3) { 0.0f, 1.0f, 0.0f });
     model = mat4_rotate_vec3(model, xrot, (vec3) { 1.0f, 0.0f, 0.0f });
     shader_set_mat4(shader_prog, "model", model);
     mesh_vpc_draw(&cube, shader_prog);
 
     model = mat4_identity;
-    model = mat4_translate_vec3(model, cubePositions[1]);
+    model = mat4_translate_vec3(model, cube_positions[1]);
     model = mat4_rotate_vec3(model, yrot, (vec3) { 0.0f, 1.0f, 0.0f });
     model = mat4_rotate_vec3(model, -xrot, (vec3) { 1.0f, 0.0f, 0.0f });
     shader_set_mat4(shader_prog, "model", model);
