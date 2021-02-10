@@ -10,6 +10,17 @@ typedef struct vec2 {
 } vec2;
 
 /*
+  vec3i
+  3 dimensional vector of signed ints
+*/
+typedef struct vec3i {
+  union {
+    struct { int x, y, z; };
+    struct { int v, t, n; };
+  };
+} vec2i;
+
+/*
   vec3
   3 dimensional vector of floats
 */

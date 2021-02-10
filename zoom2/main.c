@@ -59,77 +59,6 @@ char* getFileContents(const char* fileName) {
     return NULL;
 }
 
-vec3 parse_vec3(const char* string) {
-  vec3 vec = { 0.f, 0.f, 0.f };
-
-  char *x_start = strchr(string, ' ') + 1;
-  char *y_start = strchr(x_start, ' ') + 1;
-  char *z_start = strchr(y_start, ' ') + 1;
-  char *end = strchr(z_start, '\0');
-
-  size_t sz_x = y_start - x_start;
-  size_t sz_y = z_start - y_start;
-  size_t sz_z = end - z_start;
-  char *xs, *ys, *zs;
-  if ((xs = malloc(sz_x)) == NULL) {
-    return vec;
-  }
-  if ((ys = malloc(sz_y)) == NULL) {
-    return vec;
-  }
-  if ((zs = malloc(sz_z)) == NULL) {
-    return vec;
-  }
-
-  memcpy(xs, x_start, sz_x);
-  memcpy(ys, y_start, sz_y);
-  memcpy(zs, z_start, sz_z);
-  xs[sz_x - 1] = '\0';
-  ys[sz_y - 1] = '\0';
-  zs[sz_z - 1] = '\0';
-
-  vec.x = (float)atof(xs);
-  vec.y = (float)atof(ys);
-  vec.z = (float)atof(zs);
-
-  free(xs);
-  free(ys);
-  free(zs);
-
-  return vec;
-}
-
-vec2 parse_vec2(const char* string) {
-  vec2 vec = { 0.f, 0.f };
-
-  char *x_start = strchr(string, ' ') + 1;
-  char *y_start = strchr(x_start, ' ') + 1;
-  char *end = strchr(y_start, '\0');
-
-  size_t sz_x = y_start - x_start;
-  size_t sz_y = end - y_start;
-  char *xs, *ys;
-  if ((xs = malloc(sz_x)) == NULL) {
-    return vec;
-  }
-  if ((ys = malloc(sz_y)) == NULL) {
-    return vec;
-  }
-
-  memcpy(xs, x_start, sz_x);
-  memcpy(ys, y_start, sz_y);
-  xs[sz_x - 1] = '\0';
-  ys[sz_y - 1] = '\0';
-
-  vec.x = (float)atof(xs);
-  vec.y = (float)atof(ys);
-
-  free(xs);
-  free(ys);
-
-  return vec;
-}
-
 void loadObj(const char* fileName) {
   FILE* f;
   errno_t err = fopen_s(&f, fileName, "r");
@@ -145,6 +74,7 @@ void loadObj(const char* fileName) {
   darray* vertices = darray_create(50, sizeof(vec3));
   darray* texcoords = darray_create(50, sizeof(vec2));
   darray* normals = darray_create(50, sizeof(vec3));
+  darray* vertex_data = darray_create(50, sizeof(vertex_pc));
 
   #define LINE_BUFFER_SIZE 256
   char buffer[LINE_BUFFER_SIZE];
@@ -153,24 +83,64 @@ void loadObj(const char* fileName) {
     assert(strlen(buffer) < LINE_BUFFER_SIZE);
     if (buffer[0] == 'o') {
       mprintf("processing new model: %s\n", buffer);
+
     } else if (buffer[0] == 'v' && buffer[1] == ' ') {
-      mprintf("\tprocessing vertex: %s\n", buffer);
-      vec3 vec = parse_vec3(buffer);
+      mprintf("\tprocessing vertex: %s", buffer);
+      vec3 vec;
+      float x, y, z;
+      int n = sscanf_s(&buffer, "v %f %f %f", &vec.x, &vec.y, &vec.z);
+      mprintf("\tprocessed vertex: %f %f %f\n", vec.x, vec.y, vec.z);
       darray_insert(vertices, &vec);
+
     } else if (buffer[0] == 'v' && buffer[1] == 't') {
-      mprintf("\tprocessing texcoord: %s\n", buffer);
-      vec2 vec = parse_vec2(buffer);
+      mprintf("\tprocessing texcoord: %s", buffer);
+      vec2 vec;
+      int n = sscanf_s(buffer, "vt %f %f", &vec.x, &vec.y);
+      mprintf("\tprocessed texcoord: %f %f\n", vec.x, vec.y);
       darray_insert(texcoords, &vec);
+
     } else if (buffer[0] == 'v' && buffer[1] == 'n') {
-      mprintf("\tprocessing normal: %s\n", buffer);
-      vec3 vec = parse_vec3(buffer);
+      mprintf("\tprocessing normal: %s", buffer);
+      vec3 vec;
+      int n = sscanf_s(buffer, "vn %f %f %f", &vec.x, &vec.y, &vec.z);
+      mprintf("\tprocessed normal: %f %f %f\n", vec.x, vec.y, vec.z);
       darray_insert(normals, &vec);
-    } else if (buffer[0] == 'f') {
-      mprintf("\tprocessing face: %s\n", buffer);
-      // parse it
+
+    } else if (buffer[0] == 'f') { 
+      mprintf("\tprocessing face: %s", buffer);
+      // assuming quads...
+      // todo: not assume quads
+      unsigned int faces[12];
+      sscanf_s(
+        buffer, "f %u/%u/%u %u/%u/%u %u/%u/%u %u/%u/%u",
+        &faces[0], &faces[1], &faces[2],
+        &faces[3], &faces[4], &faces[5],
+        &faces[6], &faces[7], &faces[8],
+        &faces[9], &faces[10], &faces[11]
+      );
+
+      vertex_pc vert;
+
+      vert.position = *(vec3*)darray_get(vertices, faces[0] - 1);
+      vert.color = *(vec3*)darray_get(normals, faces[2] - 1);
+      darray_insert(vertex_data, &vert);
+
+      vert.position = *(vec3*)darray_get(vertices, faces[3] - 1);
+      vert.color = *(vec3*)darray_get(normals, faces[5] - 1);
+      darray_insert(vertex_data, &vert);
+
+      vert.position = *(vec3*)darray_get(vertices, faces[6] - 1);
+      vert.color = *(vec3*)darray_get(normals, faces[8] - 1);
+      darray_insert(vertex_data, &vert);
+
+      vert.position = *(vec3*)darray_get(vertices, faces[9] - 1);
+      vert.color = *(vec3*)darray_get(normals, faces[11] - 1);
+      darray_insert(vertex_data, &vert);
     } else {
       mprintf("\tunhandled token: %s\n", buffer);
     }
+
+    // TODO: load material
   }
     /*
       o      - object name    char*
@@ -387,21 +357,21 @@ WinMain(
   free(vert);
   free(frag);
 
-  loadObj("C:\\Users\\Noah\\Documents\\models\\cube\\cube.obj");
+  loadObj("c:\\Users\\Noah\\Documents\\GameDev\\Projects\\zoom2\\zoom2\\resources\\models\\cube\\cube.obj");
 
   vec3 cubePositions[] = {
     (vec3) { .x = -2.0f,.y = 1.0f,.z = -1.0f },
     (vec3) { .x = 2.0f,.y = -1.5f,.z = 0.0f }
   };
-  vertex cubeVertices[] = {
-    (vertex){ (vec3){ 0.5f,  0.5f,  0.5f }, (vec3){ 1.0f, 0.0f, 0.0f } }, // 0
-    (vertex){ (vec3){-0.5f,  0.5f,  0.5f }, (vec3){ 0.0f, 1.0f, 0.0f } }, // 1
-    (vertex){ (vec3){-0.5f, -0.5f,  0.5f }, (vec3){ 0.0f, 0.0f, 1.0f } }, // 2
-    (vertex){ (vec3){ 0.5f, -0.5f,  0.5f }, (vec3){ 0.9f, 0.0f, 0.9f } }, // 3
-    (vertex){ (vec3){ 0.5f,  0.5f, -0.5f }, (vec3){ 1.0f, 0.0f, 0.0f } }, // 4
-    (vertex){ (vec3){-0.5f,  0.5f, -0.5f }, (vec3){ 0.0f, 1.0f, 0.0f } }, // 5
-    (vertex){ (vec3){-0.5f, -0.5f, -0.5f }, (vec3){ 0.0f, 0.0f, 1.0f } }, // 6
-    (vertex){ (vec3){ 0.5f, -0.5f, -0.5f }, (vec3){ 0.9f, 0.0f, 0.9f } }  // 7
+  vertex_pc cubeVertices[] = {
+    (vertex_pc){ (vec3){ 0.5f,  0.5f,  0.5f }, (vec3){ 1.0f, 0.0f, 0.0f } }, // 0
+    (vertex_pc){ (vec3){-0.5f,  0.5f,  0.5f }, (vec3){ 0.0f, 1.0f, 0.0f } }, // 1
+    (vertex_pc){ (vec3){-0.5f, -0.5f,  0.5f }, (vec3){ 0.0f, 0.0f, 1.0f } }, // 2
+    (vertex_pc){ (vec3){ 0.5f, -0.5f,  0.5f }, (vec3){ 0.9f, 0.0f, 0.9f } }, // 3
+    (vertex_pc){ (vec3){ 0.5f,  0.5f, -0.5f }, (vec3){ 1.0f, 0.0f, 0.0f } }, // 4
+    (vertex_pc){ (vec3){-0.5f,  0.5f, -0.5f }, (vec3){ 0.0f, 1.0f, 0.0f } }, // 5
+    (vertex_pc){ (vec3){-0.5f, -0.5f, -0.5f }, (vec3){ 0.0f, 0.0f, 1.0f } }, // 6
+    (vertex_pc){ (vec3){ 0.5f, -0.5f, -0.5f }, (vec3){ 0.9f, 0.0f, 0.9f } }  // 7
   };
   unsigned int cubeIndices[] = {
     0, 1, 2, 2, 3, 0, // front
@@ -411,8 +381,8 @@ WinMain(
     4, 5, 1, 1, 0, 4, // top
     3, 2, 6, 6, 7, 3  // bottom
   };
-  mesh cube;
-  mesh_init(&cube, cubeVertices, 8, cubeIndices, 36);
+  mesh_vpc cube;
+  mesh_vpc_init(&cube, cubeVertices, 8, cubeIndices, 36);
 
   vec3 camera_pos = { 2.0f, 2.0f, 7.0f };
   vec3 camera_target = { 0.0f, 0.0f, 0.0f };
@@ -421,7 +391,12 @@ WinMain(
   vec3 up = { 0.0f, 1.0f, 0.0f };
 
   mat4 view = mat4_lookat(camera_pos, camera_target, up);
-  mat4 projection = mat4_perspective(0.785398f, (float)WIDTH / (float)HEIGHT, 0.1f, 100.0f);
+  mat4 projection = mat4_perspective(
+    0.785398f, // fov: 45deg (in rad)
+    (float)WIDTH / (float)HEIGHT,
+    0.1f,
+    100.0f
+  );
   
   //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
@@ -452,20 +427,20 @@ WinMain(
     model = mat4_rotate_vec3(model, yrot, (vec3) { 0.0f, 1.0f, 0.0f });
     model = mat4_rotate_vec3(model, xrot, (vec3) { 1.0f, 0.0f, 0.0f });
     shader_set_mat4(shader_prog, "model", model);
-    mesh_draw(&cube, shader_prog);
+    mesh_vpc_draw(&cube, shader_prog);
 
     model = mat4_identity;
     model = mat4_translate_vec3(model, cubePositions[1]);
     model = mat4_rotate_vec3(model, yrot, (vec3) { 0.0f, 1.0f, 0.0f });
     model = mat4_rotate_vec3(model, -xrot, (vec3) { 1.0f, 0.0f, 0.0f });
     shader_set_mat4(shader_prog, "model", model);
-    mesh_draw(&cube, shader_prog);
+    mesh_vpc_draw(&cube, shader_prog);
     
     SwapBuffers(ctx.device);
   }
 
   shader_destroy(shader_prog);
-  mesh_destroy(&cube);
+  mesh_vpc_destroy(&cube);
   wglMakeCurrent(NULL, NULL);
   wglDeleteContext(ctx.glContext);
   if (ctx.device != NULL) {

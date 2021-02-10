@@ -2,8 +2,8 @@
 
 #include "ogl.h"
 
-int mesh_init(mesh *mesh, vertex *vertices, unsigned int num_vertices, unsigned int *indices, unsigned int num_indices) {
-  if ((mesh->vertices = malloc(sizeof(vertex) * num_vertices)) == 0) {
+int mesh_vpc_init(mesh_vpc *mesh, vertex_pc *vertices, unsigned int num_vertices, unsigned int *indices, unsigned int num_indices) {
+  if ((mesh->vertices = malloc(sizeof(vertex_pc) * num_vertices)) == 0) {
     return -1;
   }
 
@@ -13,7 +13,7 @@ int mesh_init(mesh *mesh, vertex *vertices, unsigned int num_vertices, unsigned 
   }
   
   mesh->num_vertices = num_vertices;
-  memcpy(mesh->vertices, vertices, sizeof(vertex) * num_vertices);
+  memcpy(mesh->vertices, vertices, sizeof(vertex_pc) * num_vertices);
   
   mesh->num_indices = num_indices;
   memcpy(mesh->indices, indices, sizeof(unsigned int) * num_indices);
@@ -23,7 +23,7 @@ int mesh_init(mesh *mesh, vertex *vertices, unsigned int num_vertices, unsigned 
 
   glGenBuffers(1, &mesh->vbo);
   glBindBuffer(GL_ARRAY_BUFFER, mesh->vbo);
-  glBufferData(GL_ARRAY_BUFFER, sizeof(vertex) * num_vertices, mesh->vertices, GL_STATIC_DRAW);
+  glBufferData(GL_ARRAY_BUFFER, sizeof(vertex_pc) * num_vertices, mesh->vertices, GL_STATIC_DRAW);
 
   glGenBuffers(1, &mesh->ebo);
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh->ebo);
@@ -37,7 +37,7 @@ int mesh_init(mesh *mesh, vertex *vertices, unsigned int num_vertices, unsigned 
   return 0;
 }
 
-void mesh_destroy(mesh *mesh) {
+void mesh_vpc_destroy(mesh_vpc *mesh) {
   glDeleteBuffers(1, &mesh->vbo);
   glDeleteBuffers(1, &mesh->ebo);
   glDeleteVertexArrays(1, &mesh->vao);
@@ -52,7 +52,7 @@ void mesh_destroy(mesh *mesh) {
   mesh->num_indices = 0;
 }
 
-void mesh_draw(const mesh *mesh, shader shader) {
+void mesh_vpc_draw(const mesh_vpc *mesh, shader shader) {
   shader_use(shader);
   glBindVertexArray(mesh->vao);
   glDrawElements(GL_TRIANGLES, mesh->num_indices, GL_UNSIGNED_INT, 0);
