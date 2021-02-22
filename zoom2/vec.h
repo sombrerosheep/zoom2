@@ -10,15 +10,15 @@ typedef struct vec2 {
 } vec2;
 
 /*
-  vec3i
-  3 dimensional vector of signed ints
+  vec3ui
+  3 dimensional vector of unsigned ints
 */
-typedef struct vec3i {
+typedef struct vec3ui {
   union {
     struct { int x, y, z; };
     struct { int v, t, n; };
   };
-} vec2i;
+} vec3ui;
 
 /*
   vec3

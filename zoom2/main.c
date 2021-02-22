@@ -59,7 +59,7 @@ HANDLE hFile = CreateFile(fileName, GENERIC_READ, 0, NULL, OPEN_EXISTING, FILE_A
     return NULL;
 }
 
-darray *load_obj(const char* fileName) {
+mesh_vpc *load_obj(const char* fileName) {
   FILE* f;
   errno_t err = fopen_s(&f, fileName, "r");
   if (err != 0) {
@@ -71,9 +71,16 @@ darray *load_obj(const char* fileName) {
     return;
   }
 
+  mesh_vpc *mesh = malloc(sizeof(mesh));
+
   darray* vertices = darray_create(50, sizeof(vec3));
   darray* texcoords = darray_create(50, sizeof(vec2));
   darray* normals = darray_create(50, sizeof(vec3));
+  darray* faces = darray_create(50, sizeof(vec3ui));
+  darray* indices = darray_create(50, sizeof(unsigned int));
+
+
+
   darray* vertex_data = darray_create(50, sizeof(vertex_pc));
 
   #define LINE_BUFFER_SIZE 256
@@ -108,34 +115,32 @@ darray *load_obj(const char* fileName) {
 
     } else if (buffer[0] == 'f') { 
       mprintf("\tprocessing face: %s", buffer);
-      // assuming quads...
-      // todo: not assume quads
-      unsigned int faces[12];
+      // assuming tris
+      // TODO: support quads (and other face sizing)
+      vec3ui f1, f2, f3;
+
       sscanf_s(
-        buffer, "f %u/%u/%u %u/%u/%u %u/%u/%u %u/%u/%u",
-        &faces[0], &faces[1], &faces[2],
-        &faces[3], &faces[4], &faces[5],
-        &faces[6], &faces[7], &faces[8],
-        &faces[9], &faces[10], &faces[11]
+        buffer, "f %u/%u/%u %u/%u/%u %u/%u/%u",
+        &f1.v, &f1.t, &f1.n,
+        &f2.v, &f2.t, &f2.n,
+        &f3.v, &f3.t, &f3.n
       );
 
-      vertex_pc vert;
+      f1.v--;
+      f1.t--;
+      f1.n--;
 
-      vert.position = *(vec3*)darray_get(vertices, faces[0] - 1);
-      vert.color = *(vec3*)darray_get(normals, faces[2] - 1);
-      darray_insert(vertex_data, &vert);
+      f2.v--;
+      f2.t--;
+      f2.n--;
 
-      vert.position = *(vec3*)darray_get(vertices, faces[3] - 1);
-      vert.color = *(vec3*)darray_get(normals, faces[5] - 1);
-      darray_insert(vertex_data, &vert);
+      f3.v--;
+      f3.t--;
+      f3.n--;
 
-      vert.position = *(vec3*)darray_get(vertices, faces[6] - 1);
-      vert.color = *(vec3*)darray_get(normals, faces[8] - 1);
-      darray_insert(vertex_data, &vert);
-
-      vert.position = *(vec3*)darray_get(vertices, faces[9] - 1);
-      vert.color = *(vec3*)darray_get(normals, faces[11] - 1);
-      darray_insert(vertex_data, &vert);
+      darray_insert(faces, &f1);
+      darray_insert(faces, &f2);
+      darray_insert(faces, &f3);
     } else {
       mprintf("\tunhandled token: %s\n", buffer);
     }
@@ -153,12 +158,39 @@ darray *load_obj(const char* fileName) {
       mtllib - material lib
     */
 
+  for (int i = 0; i < darray_size(faces); i++) {
+    vertex_pc vert;
+    vec3ui face = *(vec3ui*)darray_get(faces, i);
+    vec3 pos = *(vec3*)darray_get(vertices, face.v);
+
+    vert.position = pos;
+    vec3 *norm = darray_get(normals, face.n);
+    vert.color = (vec3) { fabsf(norm->x), fabsf(norm->y), fabsf(norm->z) };
+    darray_insert(vertex_data, &vert);
+  }
+  
+  for (unsigned int i = 0; i < darray_size(vertex_data); i++) {
+    darray_insert(indices, &i);
+  }
+
+  mesh_vpc_init(
+    mesh,
+    (vertex_pc*)darray_get_array(vertex_data),
+    darray_size(vertex_data),
+    (unsigned int*)darray_get_array(indices),
+    darray_size(indices)
+  );
+
   fclose(f);
   darray_destroy(vertices);
   darray_destroy(texcoords);
   darray_destroy(normals);
+  darray_destroy(faces);
+  darray_destroy(indices);
+  darray_destroy(vertex_data);
   mprintf("Done reading file\n");
-  return vertex_data;
+
+  return mesh;
 }
 
 typedef struct RenderContext {
@@ -360,11 +392,14 @@ WinMain(
   free(vert);
   free(frag);
 
-  darray* cube_data = load_obj("c:\\Users\\Noah\\Documents\\GameDev\\Projects\\zoom2\\zoom2\\resources\\models\\cube\\cube.obj");
+  // need to get the vertices and indices back (and texcoords and norms, etc...)
+  // make this return a mesh and call it done
+  mesh_vpc* cube_data = load_obj("c:\\Users\\Noah\\Documents\\GameDev\\Projects\\zoom2\\zoom2\\resources\\models\\cube_tris\\cube.obj");
 
   vec3 cube_positions[] = {
     (vec3) { .x = -2.0f,.y = 1.0f,.z = -1.0f },
-    (vec3) { .x = 2.0f,.y = -1.5f,.z = 0.0f }
+    (vec3) { .x = 2.0f,.y = -1.5f,.z = 0.0f },
+    (vec3) { .x = 2.0f,.y = 2.0f,.z = -3.0f }
   };
   vertex_pc cube_vertices[] = {
     (vertex_pc){ (vec3){ 0.5f,  0.5f,  0.5f }, (vec3){ 1.0f, 0.0f, 0.0f } }, // 0
@@ -433,17 +468,25 @@ WinMain(
     mesh_vpc_draw(&cube, shader_prog);
 
     model = mat4_identity;
-    model = mat4_translate_vec3(model, cube_positions[1]);
+    model = mat4_translate_vec3(model, cube_positions[2]);
     model = mat4_rotate_vec3(model, yrot, (vec3) { 0.0f, 1.0f, 0.0f });
     model = mat4_rotate_vec3(model, -xrot, (vec3) { 1.0f, 0.0f, 0.0f });
     shader_set_mat4(shader_prog, "model", model);
     mesh_vpc_draw(&cube, shader_prog);
-    
+
+    model = mat4_identity;
+    model = mat4_translate_vec3(model, cube_positions[1]);
+    model = mat4_rotate_vec3(model, yrot, (vec3) { 0.0f, 1.0f, 0.0f });
+    model = mat4_rotate_vec3(model, xrot, (vec3) { 1.0f, 0.0f, 0.0f });
+    shader_set_mat4(shader_prog, "model", model);
+    mesh_vpc_draw(cube_data, shader_prog);
+
     SwapBuffers(ctx.device);
   }
 
   shader_destroy(shader_prog);
   mesh_vpc_destroy(&cube);
+  mesh_vpc_destroy(cube_data);
   wglMakeCurrent(NULL, NULL);
   wglDeleteContext(ctx.glContext);
   if (ctx.device != NULL) {

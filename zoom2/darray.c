@@ -10,7 +10,7 @@ struct darray {
   char* array;
 };
 
-darray* darray_create(int start_capacity, int item_size) {
+darray* darray_create(unsigned int start_capacity, unsigned int item_size) {
   darray* arr;
   if ((arr = malloc(sizeof(darray))) == 0) {
     return NULL;
@@ -32,7 +32,7 @@ int darray_insert(darray* arr, void* data) {
 
   if ((arr->size + 1) > arr->capacity) {
     // resize the array
-    int new_capacity = (int)(arr->capacity * 1.5);
+    unsigned int new_capacity = (unsigned int)(arr->capacity * 1.5);
     if ((tmp = realloc(arr->array, new_capacity * arr->item_size)) == 0) {
       return -1;
     }
@@ -89,6 +89,10 @@ int darray_resize(darray* arr, unsigned int new_size) {
 
   arr->array = tmp;
   return 0;
+}
+
+void * darray_get_array(darray* arr) {
+  return (void*)arr->array;
 }
 
 void darray_destroy(darray* arr) {
